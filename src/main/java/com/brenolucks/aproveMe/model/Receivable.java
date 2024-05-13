@@ -29,6 +29,7 @@ public class Receivable implements Serializable {
     @Column(name = "emission_date")
     private Date emissionDate;
 
+    @JsonIgnore
     @Column(name = "assignor")
     private UUID assignorID;
 }
