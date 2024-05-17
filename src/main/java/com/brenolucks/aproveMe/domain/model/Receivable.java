@@ -1,23 +1,26 @@
-package com.brenolucks.aproveMe.model;
+package com.brenolucks.aproveMe.domain.model;
 
+import com.brenolucks.aproveMe.dto.receivable.ReceivableRequestDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
 
-@Entity
-@Data
+@Entity(name = "receivable")
 @Table(name = "receivable")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Receivable implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @JsonIgnore
     private UUID id;
 
     @NotNull(message = "Campo receivableValue está nulo, porfavor preencher o mesmo!")
@@ -29,7 +32,6 @@ public class Receivable implements Serializable {
     @Column(name = "emission_date")
     private Date emissionDate;
 
-    @JsonIgnore
     @Column(name = "assignor")
     private UUID assignorID;
 }

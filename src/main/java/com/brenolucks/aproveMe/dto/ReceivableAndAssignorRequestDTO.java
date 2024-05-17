@@ -1,13 +1,6 @@
 package com.brenolucks.aproveMe.dto;
 
+import com.brenolucks.aproveMe.dto.assignor.AssignorRequestDTO;
+import com.brenolucks.aproveMe.dto.receivable.ReceivableRequestDTO;
 
-import com.brenolucks.aproveMe.model.Assignor;
-import com.brenolucks.aproveMe.model.Receivable;
-import lombok.Data;
-
-@Data
-public class ReceivableAndAssignorRequestDTO {
-
-    private ReceivableDTO receivable;
-    private AssignorDTO assignor;
-}
+public record ReceivableAndAssignorRequestDTO (ReceivableRequestDTO receivableRequestDTO, AssignorRequestDTO assignorRequestDTO){}

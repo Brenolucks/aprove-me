@@ -1,22 +1,25 @@
-package com.brenolucks.aproveMe.model;
+package com.brenolucks.aproveMe.domain.model;
 
+import com.brenolucks.aproveMe.dto.assignor.AssignorRequestDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.UUID;
 
-@Entity
-@Data
+@Entity(name = "assignor")
 @Table(name = "assignor")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Assignor implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @JsonIgnore
     private UUID id;
 
     @NotNull(message = "Campo document está nulo, porfavor preencher o mesmo!")

@@ -1,165 +1,115 @@
 package com.brenolucks.aproveMe.services;
 
+import com.brenolucks.aproveMe.domain.mapper.AssignorMapper;
+import com.brenolucks.aproveMe.domain.mapper.ReceivableMapper;
 import com.brenolucks.aproveMe.dto.*;
-import com.brenolucks.aproveMe.model.Assignor;
-import com.brenolucks.aproveMe.model.Receivable;
+import com.brenolucks.aproveMe.dto.assignor.AssignorRequestDTO;
+import com.brenolucks.aproveMe.dto.assignor.AssignorResponseDTO;
+import com.brenolucks.aproveMe.dto.receivable.ReceivableRequestDTO;
+import com.brenolucks.aproveMe.dto.receivable.ReceivableResponseDTO;
+import com.brenolucks.aproveMe.domain.model.Assignor;
+import com.brenolucks.aproveMe.domain.model.Receivable;
 import com.brenolucks.aproveMe.repositories.AssignorRepository;
 import com.brenolucks.aproveMe.repositories.ReceivableRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import org.springframework.expression.spel.ast.Assign;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.html.Option;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@Transactional
 public class ReceivableAssignorServiceImpl implements ReceivableAssignorService {
-
     private final ReceivableRepository receivableRepository;
     private final AssignorRepository assignorRepository;
+    private final AssignorMapper assignorMapper;
+    private final ReceivableMapper receivableMapper;
 
-    public ReceivableAssignorServiceImpl(ReceivableRepository receivableRepository, AssignorRepository assignorRepository) {
+    public ReceivableAssignorServiceImpl(ReceivableRepository receivableRepository, AssignorRepository assignorRepository,
+                                         ReceivableMapper receivableMapper, AssignorMapper assignorMapper) {
         this.receivableRepository = receivableRepository;
         this.assignorRepository = assignorRepository;
+        this.receivableMapper = receivableMapper;
+        this.assignorMapper = assignorMapper;
     }
 
     @Override
-    public ReceivableAndAssignorResponseDTO registerReceivableAndAssignor(ReceivableAndAssignorRequestDTO requestDTO){
-        Assignor convertedAssignor = convertAssignorToModel(requestDTO.getAssignor());
-        assignorRepository.save(convertedAssignor);
-
-        Receivable convertedReceivable = convertReceivableToModel(requestDTO.getReceivable());
-        convertedReceivable.setAssignorID(convertedAssignor.getId());
-        receivableRepository.save(convertedReceivable);
-
-        ReceivableAndAssignorResponseDTO responseDTO = new ReceivableAndAssignorResponseDTO();
-        responseDTO.setAssignor(convertedAssignor);
-        responseDTO.setReceivable(convertedReceivable);
-
-        return responseDTO;
-
-    }
-
-    @Override
-    public Optional<Receivable> getReceivableById(UUID id){
-        Optional<Receivable> receivableById = receivableRepository.findById(id);
-
-        receivableById
-                .map(mensagem -> "Mensagem: " + mensagem)
-                .orElse("Não existe recebível para este id: " + id);
-
-        return receivableById;
-    }
-
-    @Override
-    public Optional<Assignor> getAssignorById(UUID id){
-        Optional<Assignor> assignorById = assignorRepository.findById(id);
-
-        assignorById
-                .map(mensagem -> "Mensagem: " + mensagem)
-                .orElse("Não existe cedente para este id: " + id);
-
-        return assignorById;
-    }
-
-    @Override
-    public Receivable updateReceivable(UUID id, Receivable receivable){
-        var existReceivableById = receivableRepository.findById(id);
-
-        if(existReceivableById.isPresent()){
-            Receivable receivableUpdate = existReceivableById.get();
-            receivableUpdate.setReceivableValue(receivable.getReceivableValue());
-            receivableUpdate.setEmissionDate(receivable.getEmissionDate());
-
-            return receivableUpdate;
-        } else {
-            throw new EntityNotFoundException("Não foi encontrado nenhum recebível com este id: " + id);
+    @Transactional
+    public ReceivableAndAssignorResponseDTO registerReceivableAndAssignor(ReceivableAndAssignorRequestDTO receivableAndAssignorRequestDTO) {
+        if (receivableAndAssignorRequestDTO == null || receivableAndAssignorRequestDTO.assignorRequestDTO() == null || receivableAndAssignorRequestDTO.receivableRequestDTO() == null) {
+            throw new IllegalArgumentException("Request DTO or its components cannot be null");
         }
+
+        Assignor assignor = assignorRepository.save(assignorMapper.toAssignor(receivableAndAssignorRequestDTO.assignorRequestDTO()));
+        Receivable receivable = receivableMapper.toReceivable(receivableAndAssignorRequestDTO.receivableRequestDTO());
+
+        receivable.setAssignorID(assignor.getId());
+        var receivableResponse = receivableMapper.toReceivableResponseDTO(receivableRepository.save(receivable));
+        var assignorResponse = assignorMapper.toAssignorResponseDTO(assignor);
+
+        return new ReceivableAndAssignorResponseDTO(receivableResponse, assignorResponse);
     }
 
     @Override
-    public Assignor updateAssignor(UUID id, Assignor assignor){
-        var existAssignorById = assignorRepository.findById(id);
-
-        if(existAssignorById.isPresent()){
-            Assignor assignorUpdate = existAssignorById.get();
-            assignorUpdate.setDocument(assignor.getDocument());
-            assignorUpdate.setEmail(assignor.getEmail());
-            assignorUpdate.setPhone(assignor.getPhone());
-            assignorUpdate.setName(assignor.getName());
-
-            return assignorUpdate;
-        } else {
-            throw new EntityNotFoundException("Não foi encontrado nenhum cedente com este id: " + id);
-        }
+    public ReceivableResponseDTO getReceivableById(UUID id) {
+        return receivableMapper.toReceivableResponseDTO(receivableRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Não existe recebível para este id: " + id)));
     }
 
     @Override
-    public String deleteReceivable(UUID id) {
-        var existReceivable = receivableRepository.findById(id);
-
-        if(existReceivable.isPresent()){
-            receivableRepository.deleteById(id);
-            return "Recebível deletado com sucesso!";
-        } else {
-            return "Recebível não encontrado";
-        }
+    public AssignorResponseDTO getAssignorById(UUID id) {
+        return assignorMapper.toAssignorResponseDTO(assignorRepository.findAssignorById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Não existe cedente para este id: " + id)));
     }
 
     @Override
-    public String deleteAssignor(UUID id) {
-        var existAssignor = assignorRepository.findById(id);
+    public ReceivableResponseDTO updateReceivable(UUID id, ReceivableRequestDTO receivableRequestDTO) {
+        Receivable receivableUpdated = receivableRepository.findReceivableById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Não foi encontrado nenhum recebível com este id: " + id));
 
-        if(existAssignor.isPresent()){
-            assignorRepository.deleteById(id);
-            return "Cedente deletado com sucesso!";
-        } else {
-            return "Cedente não encontrado";
-        }
-    }
-    @Override
-    public ReceivableResponseDTO registerReceivable(ReceivableDTO receivableDTO){
-        Receivable receivable = convertReceivableToModel(receivableDTO);
-        receivableRepository.save(receivable);
+        receivableUpdated.setReceivableValue(receivableRequestDTO.receivableValue());
+        receivableUpdated.setEmissionDate(receivableRequestDTO.emissionDate());
 
-        ReceivableResponseDTO receivableResponseDTO = new ReceivableResponseDTO();
-        receivableResponseDTO.setReceivableValue(receivable.getReceivableValue());
-        receivableResponseDTO.setEmissionDate(receivable.getEmissionDate());
+        return receivableMapper.toReceivableResponseDTO(receivableRepository.save(receivableUpdated));
 
-        return receivableResponseDTO;
     }
 
     @Override
-    public AssignorResponseDTO registerAssignor(AssignorDTO assignorDTO){
-        Assignor assignor = convertAssignorToModel(assignorDTO);
-        assignorRepository.save(assignor);
+    public AssignorResponseDTO updateAssignor(UUID id, AssignorRequestDTO assignorRequestDTO) {
+        Assignor assignorUpdated = assignorRepository.findAssignorById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Não foi encontrador nenhum cedente com este id: " + id));
 
-        AssignorResponseDTO assignorResponseDTO = new AssignorResponseDTO();
-        assignorResponseDTO.setDocument(assignor.getDocument());
-        assignorResponseDTO.setEmail(assignor.getEmail());
-        assignorResponseDTO.setName(assignor.getName());
-        assignorResponseDTO.setPhone(assignor.getPhone());
+        assignorUpdated.setDocument(assignorRequestDTO.document());
+        assignorUpdated.setEmail(assignorRequestDTO.email());
+        assignorUpdated.setPhone(assignorRequestDTO.phone());
+        assignorUpdated.setName(assignorRequestDTO.name());
 
-        return assignorResponseDTO;
-    }
-    @Override
-    public Receivable convertReceivableToModel(ReceivableDTO receivableDTO){
-        Receivable receivable = new Receivable();
-        receivable.setReceivableValue(receivableDTO.getReceivableValue());
-        receivable.setEmissionDate(receivableDTO.getEmissionDate());
-        return receivable;
+        return assignorMapper.toAssignorResponseDTO(assignorRepository.save(assignorUpdated));
     }
 
     @Override
-    public Assignor convertAssignorToModel(AssignorDTO assignorDTO){
-        Assignor assignor = new Assignor();
-        assignor.setDocument(assignorDTO.getDocument());
-        assignor.setEmail(assignorDTO.getEmail());
-        assignor.setPhone(assignorDTO.getPhone());
-        assignor.setName(assignorDTO.getName());
-        return assignor;
+    public void deleteReceivable(UUID id) {
+        var existReceivable = receivableRepository.findReceivableById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Recebível não encontrado"));
+
+        receivableRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteAssignor(UUID id) {
+        var existAssignor = assignorRepository.findAssignorById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cedente não encontrado"));
+
+        assignorRepository.deleteById(id);
+    }
+
+    @Override
+    public ReceivableResponseDTO registerReceivable(ReceivableRequestDTO receivableRequestDTO) {
+        return receivableMapper.toReceivableResponseDTO(receivableRepository.save(receivableMapper.toReceivable(receivableRequestDTO)));
+    }
+
+    @Override
+    public AssignorResponseDTO registerAssignor(AssignorRequestDTO assignorRequestDTO) {
+        return assignorMapper.toAssignorResponseDTO(assignorRepository.save(assignorMapper.toAssignor(assignorRequestDTO)));
     }
 }
