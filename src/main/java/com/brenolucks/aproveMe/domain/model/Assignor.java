@@ -1,7 +1,5 @@
 package com.brenolucks.aproveMe.domain.model;
 
-import com.brenolucks.aproveMe.dto.assignor.AssignorRequestDTO;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

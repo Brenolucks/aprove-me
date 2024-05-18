@@ -13,6 +13,7 @@ import com.brenolucks.aproveMe.repositories.AssignorRepository;
 import com.brenolucks.aproveMe.repositories.ReceivableRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.Null;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -37,7 +38,7 @@ public class ReceivableAssignorServiceImpl implements ReceivableAssignorService 
     @Transactional
     public ReceivableAndAssignorResponseDTO registerReceivableAndAssignor(ReceivableAndAssignorRequestDTO receivableAndAssignorRequestDTO) {
         if (receivableAndAssignorRequestDTO == null || receivableAndAssignorRequestDTO.assignorRequestDTO() == null || receivableAndAssignorRequestDTO.receivableRequestDTO() == null) {
-            throw new IllegalArgumentException("Request DTO or its components cannot be null");
+            throw new IllegalArgumentException("Os campos do request não podem ser nulos.");
         }
 
         Assignor assignor = assignorRepository.save(assignorMapper.toAssignor(receivableAndAssignorRequestDTO.assignorRequestDTO()));
@@ -52,7 +53,7 @@ public class ReceivableAssignorServiceImpl implements ReceivableAssignorService 
 
     @Override
     public ReceivableResponseDTO getReceivableById(UUID id) {
-        return receivableMapper.toReceivableResponseDTO(receivableRepository.findById(id)
+        return receivableMapper.toReceivableResponseDTO(receivableRepository.findReceivableById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Não existe recebível para este id: " + id)));
     }
 
@@ -77,7 +78,7 @@ public class ReceivableAssignorServiceImpl implements ReceivableAssignorService 
     @Override
     public AssignorResponseDTO updateAssignor(UUID id, AssignorRequestDTO assignorRequestDTO) {
         Assignor assignorUpdated = assignorRepository.findAssignorById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Não foi encontrador nenhum cedente com este id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Não foi encontrado nenhum cedente com este id: " + id));
 
         assignorUpdated.setDocument(assignorRequestDTO.document());
         assignorUpdated.setEmail(assignorRequestDTO.email());
@@ -105,11 +106,12 @@ public class ReceivableAssignorServiceImpl implements ReceivableAssignorService 
 
     @Override
     public ReceivableResponseDTO registerReceivable(ReceivableRequestDTO receivableRequestDTO) {
-        return receivableMapper.toReceivableResponseDTO(receivableRepository.save(receivableMapper.toReceivable(receivableRequestDTO)));
+        var receivable = receivableMapper.toReceivable(receivableRequestDTO);
+        return receivableMapper.toReceivableResponseDTO(receivableRepository.save(receivable));
     }
 
     @Override
-    public AssignorResponseDTO registerAssignor(AssignorRequestDTO assignorRequestDTO) {
+    public AssignorResponseDTO registerAssignor(AssignorRequestDTO assignorRequestDTO) throws RuntimeException {
         return assignorMapper.toAssignorResponseDTO(assignorRepository.save(assignorMapper.toAssignor(assignorRequestDTO)));
     }
 }
